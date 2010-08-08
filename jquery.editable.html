@@ -17,7 +17,7 @@ table{border-spacing:0; border-collapse:collapse;}
 </head>
 <body>
 <div>
-    <input type="button" value="新增" />
+    <input id="newbar" type="button" value="新增" />
 </div>
 <table id="editableTable">
 <thead>
@@ -79,7 +79,10 @@ $(function(){
             {type:"text", min:1, max:32, pattern:""},
             {type:"number", min:0, max:100},
             {type:"float", min:0, max:300}
-        ]
+            ],
+        create: {
+            bar : "#newbar"
+        }
     });
 });
 /*]]>*/</script>
