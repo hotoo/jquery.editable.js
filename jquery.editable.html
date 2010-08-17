@@ -75,13 +75,33 @@ table{border-spacing:0; border-collapse:collapse;}
 $(function(){
     $("#editableTable").editable({
         columns : [
-            {type:"readonly"},
-            {type:"text", min:1, max:32, pattern:""},
-            {type:"number", min:0, max:100},
-            {type:"float", min:0, max:300}
+            {type:"readonly", name:"id"},
+            {type:"text", name:"username", min:1, max:32, pattern:""},
+            {type:"number", name:"age", min:0, max:100},
+            {type:"float", name:"height", min:0, max:300}
             ],
         create: {
             bar : "#newbar"
+        },
+        "remove"        : {
+            bar         : "tr>td:last-child>a.remove",
+            action      : "remove.json",
+            method      : "post",
+            data:function(line,cols){
+                return "id="+cols.eq(0).text();
+            },
+            dataType    : "json",
+            callback    : function(data){return true;}
+        },
+        save:{
+            bar         : "tr>td:last-child>a.save",
+            action      : "save.json",
+            method      : "post",
+            data:function(line,cols){
+                return "id="+cols.eq(0).text();
+            },
+            dataType    : "json",
+            callback    : function(data){return true;}
         }
     });
 });

@@ -43,6 +43,16 @@
                 _this.find("tbody").append(
                     _this.find("tbody>tr:eq(0)").clone()
                 );
+
+                var line = $(_this).find('tbody>tr:last'),
+                    columns = line.find(">td");
+                for(var i=0,l=columns.length; i<l; i++){
+                    if(settings.columns[i] && settings.columns[i].type=="readonly"){
+                        columns.eq(i).html('<div></div>');
+                    }
+                }
+
+                _this.find("tbody>tr:last").addClass("newer");
                 // FIXME: do better.
                 _this.find("tbody>tr:last>td:last>a.edit").click();
                 _this.find("tbody>tr:last>td>input").val("");
@@ -51,7 +61,7 @@
         $(settings.edit.bar, this).live("click", function(){
             var line = $(this).parent().parent(),
                 columns = line.find(">td");
-            for(var i=0,col,$col,val,type,sz,l=columns.length; i<l; i++){
+            for(var i=0,col,$col,val,type,name,sz,l=columns.length; i<l; i++){
                 if(!settings.columns[i] || !settings.columns[i].type){continue;}
                 col=columns[i], $col=$(col);
                 val = $col.text();
@@ -77,7 +87,8 @@
                 default:
                     continue;
                 }
-                columns[i].innerHTML = '<input type="'+type+'" style="width:'+($col.innerWidth()-5)+'px;" size="'+sz+'" value="'+val+'" />';
+                name = settings.columns[i].name;
+                columns[i].innerHTML = '<input type="'+type+'" name="'+name+'" style="width:'+($col.innerWidth()-5)+'px;" size="'+sz+'" value="'+val+'" />';
             }
             var p=$(_this), idx=line[0].rowIndex-1;
             $(settings.edit.bar, p).eq(idx).hide();
@@ -86,36 +97,81 @@
             $(settings.cancel.bar, p).eq(idx).show();
         });
         $(settings.remove.bar, this).live("click",function(){
-            var __this=this;
+            var __this=this,
+                line = $(this).parent().parent();
+                cols = line.find(">td"),
+                d=settings.remove.data instanceof Function?settings.remove.data.call(this,line,cols):(settings.remove.data||"");
             $.ajax({
-                data : settings.remove.data instanceof Function?settings.remove.data.call(this):settings.remove.data,
+                data : d,
                 type: settings.remove.method,
                 dataType : settings.remove.dataType,
                 url : settings.remove.action,
                 success : function(data,state){
-                    if(settings.remove.callback.call(__this, data)){
-                        $(__this).parent().parent().remove();
+                    if(data.status=="ok"){
+                        if(settings.remove.callback.call(__this, data)){
+                            $(__this).parent().parent().remove();
+                        }
+                    }else{
+                        alert(data.msg)
                     }
                 }
             });
         });
         $(settings.save.bar, this).live("click",function(){
-            var __this=this;
+            var __this=this, dt=[],
+                line = $(this).parent().parent();
+                columns = line.find(">td");
+            if(settings.save.data instanceof Function){
+                dt[0] = settings.save.data.call(this,line,columns);
+            }else if(settings.save.data){
+                dt[0] = settings.save.data;
+            }
+            for(var i=0,col,$col,ipt,name,val,l=columns.length; i<l; i++){
+                if(!settings.columns[i] || !settings.columns[i].type){continue;}
+                col=columns[i], $col=$(col);
+                ipt = $col.find("input");
+                val = ipt.val();
+                name = ipt.attr("name");
+                switch(settings.columns[i].type){
+                case "readonly":
+                    continue;
+                case "number":
+                case "int":
+                    dt[dt.length] = name+"="+encodeURIComponent(val);
+                    break;
+                case "float":
+                    dt[dt.length] = name+"="+encodeURIComponent(val);
+                    break;
+                case "text":
+                    dt[dt.length] = name+"="+encodeURIComponent(val);
+                    break;
+                default:
+                    continue;
+                }
+            }
             $.ajax({
-                data : settings.save.data instanceof Function?settings.save.data.call(this):settings.save.data,
+                data : dt.join("&"),
                 type: settings.save.method,
                 dataType : settings.save.dataType,
                 url : settings.save.action,
                 success : function(data,state){
+                    if(data.status!="ok"){
+                        alert(data.msg);
+                        return;
+                    }
+                    //var line = $(__this).parent().parent();
+                        //columns = line.find(">td");
                     if(settings.save.callback.call(__this, data)){
-                        var line = $(__this).parent().parent();
-                            columns = line.find(">td");
                         for(var i=0,col,$col,val,l=columns.length; i<l; i++){
                             if(!settings.columns[i] || !settings.columns[i].type){continue;}
                             col=columns[i], $col=$(col);
                             val = $col.find("input").val();
                             switch(settings.columns[i].type){
                             case "readonly":
+                                if(line.hasClass("newer")){
+                                    val = data.msg;
+                                    break;
+                                }
                                 continue;
                             case "number":
                             case "int":
@@ -138,12 +194,19 @@
                         $(settings.edit.bar, p).eq(idx).show();
                         $(settings.remove.bar, p).eq(idx).show();
                     }
+                    if(line.hasClass("newer")){
+                        line.removeClass("newer");
+                    }
                 }
             });
         });
         $(settings.cancel.bar, this).live("click", function(){
             var line = $(this).parent().parent();
                 columns = line.find(">td");
+            if(line.hasClass("newer")){
+                line.remove();
+                return;
+            }
             for(var i=0,col,$col,val,l=columns.length; i<l; i++){
                 if(!settings.columns[i] || !settings.columns[i].type){continue;}
                 col=columns[i], $col=$(col);
