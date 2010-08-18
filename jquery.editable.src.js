@@ -21,6 +21,7 @@
                 method      : "post",
                 data        : null,
                 dataType    : "json",
+                validator   : function(line,cols){return window.confirm("确认删除“"+cols.eq(1).text()+"”吗？");},
                 callback    : function(data){return true;}
             },
             save            : {
@@ -29,6 +30,7 @@
                 method      : "post",
                 data        : null,
                 dataType    : "json",
+                validator   : function(line,cols){return true;},
                 callback    : function(data){return true;}
             },
             cancel          : {
@@ -88,7 +90,7 @@
                     continue;
                 }
                 name = settings.columns[i].name;
-                columns[i].innerHTML = '<input type="'+type+'" name="'+name+'" style="width:'+($col.innerWidth()-5)+'px;" size="'+sz+'" value="'+val+'" />';
+                columns[i].innerHTML = '<input type="'+type+'" name="'+name+'" style="width:'+($col.innerWidth()-2)+'px;" size="'+sz+'" value="'+val+'" />';
             }
             var p=$(_this), idx=line[0].rowIndex-1;
             $(settings.edit.bar, p).eq(idx).hide();
@@ -98,9 +100,14 @@
         });
         $(settings.remove.bar, this).live("click",function(){
             var __this=this,
-                line = $(this).parent().parent();
-                cols = line.find(">td"),
-                d=settings.remove.data instanceof Function?settings.remove.data.call(this,line,cols):(settings.remove.data||"");
+                line = $(this).parent().parent(),
+                cols = line.find(">td");
+            if(settings.remove.validator &&
+                settings.remove.validator instanceof Function &&
+                !settings.remove.validator.call(this,line,cols)){
+                    return;
+            }
+            var d=settings.remove.data instanceof Function?settings.remove.data.call(this,line,cols):(settings.remove.data||"");
             $.ajax({
                 data : d,
                 type: settings.remove.method,
@@ -132,17 +139,34 @@
                 ipt = $col.find("input");
                 val = ipt.val();
                 name = ipt.attr("name");
+                var min=settings.columns[i].min,
+                    max=settings.columns[i].max;
                 switch(settings.columns[i].type){
                 case "readonly":
                     continue;
                 case "number":
                 case "int":
+                    if(!validate(val,"int",min,max)){
+                        ipt.focus();
+                        ipt.css('border-color','#f00');
+                        return;
+                    }
                     dt[dt.length] = name+"="+encodeURIComponent(val);
                     break;
                 case "float":
+                    if(!validate(val,"float",min,max)){
+                        ipt.focus();
+                        ipt.css('border-color','#f00');
+                        return;
+                    }
                     dt[dt.length] = name+"="+encodeURIComponent(val);
                     break;
                 case "text":
+                    if(!validate(val,"text",min,max)){
+                        ipt.focus();
+                        ipt.css('border-color','#f00');
+                        return;
+                    }
                     dt[dt.length] = name+"="+encodeURIComponent(val);
                     break;
                 default:
@@ -207,22 +231,22 @@
                 line.remove();
                 return;
             }
-            for(var i=0,col,$col,val,l=columns.length; i<l; i++){
+            for(var i=0,col,$col,ipt,val,l=columns.length; i<l; i++){
                 if(!settings.columns[i] || !settings.columns[i].type){continue;}
                 col=columns[i], $col=$(col);
-                val = $col.find("input").val();
+                ipt=$col.find("input");
                 switch(settings.columns[i].type){
                 case "readonly":
                     continue;
                 case "number":
                 case "int":
-                    val = parseInt(val);
+                    val = parseInt(ipt[0].defaultValue);
                     break;
                 case "float":
-                    val = parseFloat(val);
+                    val = parseFloat(ipt[0].defaultValue);
                     break;
                 case "text":
-                    val = val;
+                    val = ipt[0].defaultValue;
                     break;
                 default:
                     continue;
@@ -243,6 +267,34 @@
                 return val.length;
             }else if(typeof(val)=="number" || val instanceof Number){
                 return String(val).length;
+            }
+        }
+        function validate(val,type,min,max){
+            switch(type){
+            case 'int':
+            case 'number':
+                val=parseInt(val);
+                if(!/^[0-9]+$/.test(val) || val==Number.NaN || val<min || val>max){
+                    alert("请输入["+min+","+max+"]之间的整数。");
+                    return false;
+                }
+                return true;
+            case 'float':
+                val=parseFloat(val);
+                if(!/^[0-9]+(?:\.[0-9]+)?$/.test(val) || val==Number.NaN || val<min || val>max){
+                    alert("请输入["+min+","+max+"]之间的数值。");
+                    return false;
+                }
+                return true;
+            case 'text':
+                var len=String(val).length;
+                if(len<min || len>max){
+                    alert("请输入长度在["+min+","+max+"]之间的字符串。");
+                    return false;
+                }
+                return true;
+            default:
+                return false;
             }
         }
     };
