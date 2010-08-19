@@ -92,7 +92,7 @@ $(function(){
                 return "id="+cols.eq(0).text();
             },
             dataType    : "json",
-            validator   : function(line,cols){return window.confirm("确认删除“"+cols.eq(1).text()+"”吗？");},
+            onsubmit    : function(line,cols){return window.confirm("确认删除“"+cols.eq(1).text()+"”吗？");},
             callback    : function(data){return true;}
         },
         save:{
@@ -103,7 +103,7 @@ $(function(){
                 return "id="+cols.eq(0).text();
             },
             dataType    : "json",
-            //validator   : function(line,cols){return window.confirm("确认提交“"+cols.find('input').text()+"”吗？");},
+            //onsubmit    : function(line,cols){return window.confirm("确认提交“"+cols.find('input').text()+"”吗？");},
             callback    : function(data){return true;}
         }
     });

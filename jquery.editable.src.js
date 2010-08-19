@@ -21,7 +21,7 @@
                 method      : "post",
                 data        : null,
                 dataType    : "json",
-                validator   : function(line,cols){return window.confirm("确认删除“"+cols.eq(1).text()+"”吗？");},
+                onsubmit    : function(line,cols){return window.confirm("确认删除“"+cols.eq(1).text()+"”吗？");},
                 callback    : function(data){return true;}
             },
             save            : {
@@ -30,7 +30,7 @@
                 method      : "post",
                 data        : null,
                 dataType    : "json",
-                validator   : function(line,cols){return true;},
+                onsubmit    : function(line,cols){return true;},
                 callback    : function(data){return true;}
             },
             cancel          : {
@@ -102,9 +102,9 @@
             var __this=this,
                 line = $(this).parent().parent(),
                 cols = line.find(">td");
-            if(settings.remove.validator &&
-                settings.remove.validator instanceof Function &&
-                !settings.remove.validator.call(this,line,cols)){
+            if(settings.remove.onsubmit &&
+                settings.remove.onsubmit instanceof Function &&
+                !settings.remove.onsubmit.call(this,line,cols)){
                     return;
             }
             var d=settings.remove.data instanceof Function?settings.remove.data.call(this,line,cols):(settings.remove.data||"");
@@ -133,9 +133,9 @@
             }else if(settings.save.data){
                 dt[0] = settings.save.data;
             }
-            if(settings.save.validator &&
-                settings.save.validator instanceof Function &&
-                !settings.save.validator.call(this,line,columns)){
+            if(settings.save.onsubmit &&
+                settings.save.onsubmit instanceof Function &&
+                !settings.save.onsubmit.call(this,line,columns)){
                     return;
             }
             for(var i=0,col,$col,ipt,name,val,l=columns.length; i<l; i++){
@@ -155,6 +155,8 @@
                         ipt.focus();
                         ipt.css('border-color','#f00');
                         return;
+                    }else{
+                        ipt.css('border-color','');
                     }
                     dt[dt.length] = name+"="+encodeURIComponent(val);
                     break;
@@ -163,6 +165,8 @@
                         ipt.focus();
                         ipt.css('border-color','#f00');
                         return;
+                    }else{
+                        ipt.css('border-color','');
                     }
                     dt[dt.length] = name+"="+encodeURIComponent(val);
                     break;
@@ -171,6 +175,8 @@
                         ipt.focus();
                         ipt.css('border-color','#f00');
                         return;
+                    }else{
+                        ipt.css('border-color','');
                     }
                     dt[dt.length] = name+"="+encodeURIComponent(val);
                     break;
