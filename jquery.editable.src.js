@@ -133,6 +133,11 @@
             }else if(settings.save.data){
                 dt[0] = settings.save.data;
             }
+            if(settings.save.validator &&
+                settings.save.validator instanceof Function &&
+                !settings.save.validator.call(this,line,columns)){
+                    return;
+            }
             for(var i=0,col,$col,ipt,name,val,l=columns.length; i<l; i++){
                 if(!settings.columns[i] || !settings.columns[i].type){continue;}
                 col=columns[i], $col=$(col);
@@ -172,6 +177,9 @@
                 default:
                     continue;
                 }
+            }
+            if(line.hasClass("newer")){
+                dt[dt.length] = "isadd=1";
             }
             $.ajax({
                 data : dt.join("&"),
@@ -273,14 +281,12 @@
             switch(type){
             case 'int':
             case 'number':
-                val=parseInt(val);
                 if(!/^[0-9]+$/.test(val) || val==Number.NaN || val<min || val>max){
                     alert("请输入["+min+","+max+"]之间的整数。");
                     return false;
                 }
                 return true;
             case 'float':
-                val=parseFloat(val);
                 if(!/^[0-9]+(?:\.[0-9]+)?$/.test(val) || val==Number.NaN || val<min || val>max){
                     alert("请输入["+min+","+max+"]之间的数值。");
                     return false;

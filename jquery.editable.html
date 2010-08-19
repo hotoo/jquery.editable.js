@@ -103,7 +103,7 @@ $(function(){
                 return "id="+cols.eq(0).text();
             },
             dataType    : "json",
-            validator   : function(line,cols){return window.confirm("确认提交“"+cols.find('input').text()+"”吗？");},
+            //validator   : function(line,cols){return window.confirm("确认提交“"+cols.find('input').text()+"”吗？");},
             callback    : function(data){return true;}
         }
     });
