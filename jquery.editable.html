@@ -24,6 +24,7 @@ table{border-spacing:0; border-collapse:collapse;}
 <thead>
     <tr>
         <th>ID</th>
+        <th>UUID</th>
         <th>Name</th>
         <th>Age</th>
         <th>Height</th>
@@ -33,6 +34,7 @@ table{border-spacing:0; border-collapse:collapse;}
 <tbody>
     <tr>
         <td><div>0</div></td>
+        <td><div>1234567890123456789012</div></td>
         <td><div>Lover</div></td>
         <td><div>18</div></td>
         <td><div>175</div></td>
@@ -45,7 +47,8 @@ table{border-spacing:0; border-collapse:collapse;}
     </tr>
     <tr>
         <td><div>1</div></td>
-        <td><div>Lover</div></td>
+        <td><div>1234567890123456789012</div></td>
+        <td><div>Lover 2</div></td>
         <td><div>18</div></td>
         <td><div>180</div></td>
         <td>
@@ -57,6 +60,7 @@ table{border-spacing:0; border-collapse:collapse;}
     </tr>
     <tr>
         <td><div>2</div></td>
+        <td><div>1234567890123456789012</div></td>
         <td><div>Lover</div></td>
         <td><div>18</div></td>
         <td><div>170.5</div></td>
@@ -77,19 +81,40 @@ $(function(){
     $("#editableTable").editable({
         columns : [
             {type:"readonly", name:"id"},
-            {type:"text", name:"username", min:1, max:32, pattern:""},
-            {type:"number", name:"age", min:0, max:100},
+            {type:"readonly", creatable:true, name:"pk", pattern:'[0-9]{16,22}', msg:"请输入16到22位长度的数字。"},
+            {type:"text", name:"username", min:1, max:32, pattern:'', empty:true},
+            {type:"number", name:"age", min:1, max:10},
             {type:"float", name:"height", min:0, max:300}
             ],
         create: {
-            bar : "#newbar"
+            bar         : "#newbar",
+            action      : "save.json",
+            method      : "post",
+            data        : function(line,cols){
+                return "id="+encodeURIComponent(encodeURIComponent(cols.eq(0).text()));
+            },
+            dataType    : "json",
+            oncreate    : function(cols){
+                cols.filter(':last').append(
+                    '<a href="javascript:void(0);" class="edit" style="display:none;">编辑</a> '+
+                    '<a href="javascript:void(0);" class="remove" style="display:none;">删除</a> '+
+                    '<a href="javascript:void(0);" class="save" style="display:inline;">保存</a> '+
+                    '<a href="javascript:void(0);" class="cancel" style="display:inline;">取消</a>'
+                );
+            },
+            onsubmit    :function(line,cols){
+                return true;
+            },
+            callback    :function(){
+                return true;
+            }
         },
         "remove"        : {
             bar         : "tr>td:last-child>a.remove",
             action      : "remove.json",
             method      : "post",
             data:function(line,cols){
-                return "id="+cols.eq(0).text();
+                return "id="+encodeURIComponent(encodeURIComponent(cols.eq(0).text()));
             },
             dataType    : "json",
             onsubmit    : function(line,cols){return window.confirm("确认删除“"+cols.eq(1).text()+"”吗？");},
@@ -100,7 +125,7 @@ $(function(){
             action      : "save.json",
             method      : "post",
             data:function(line,cols){
-                return "id="+cols.eq(0).text();
+                return "id="+encodeURIComponent(encodeURIComponent(cols.eq(0).text()));
             },
             dataType    : "json",
             //onsubmit    : function(line,cols){return window.confirm("确认提交“"+cols.find('input').text()+"”吗？");},

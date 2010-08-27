@@ -1,3 +1,21 @@
 让某区域拥有即时编辑的特性。
 
-支持独立的区域和组合的区域。
+支持一个独立的区域和多个区域的组合。
+
+creatable.
+
+数据验证：
+(type:
+    readonly
+    number/int
+    float
+    text
+&&
+length:
+    min
+    max
+&&
+pattern(user defined)
+)
+||
+empty

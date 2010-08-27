@@ -9,6 +9,14 @@
             columns         : [],
             create          : {
                 bar         : null,
+                oncreate    : function(cols){
+                    cols.filter(':last').append(
+                        '<a href="javascript:void(0);" class="edit">编辑</a>'+
+                        '<a href="javascript:void(0);" class="remove">删除</a>'+
+                        '<a href="javascript:void(0);" class="save">保存</a>'+
+                        '<a href="javascript:void(0);" class="cancel">取消</a>'
+                    );
+                },
                 callback    : function(){}
             },
             edit            : {
@@ -42,22 +50,24 @@
         var _this = this;
         if(settings.create.bar){
             $(settings.create.bar).click(function(){
-                _this.find("tbody").append(
-                    _this.find("tbody>tr:eq(0)").clone()
-                );
-
-                var line = $(_this).find('tbody>tr:last'),
-                    columns = line.find(">td");
-                for(var i=0,l=columns.length; i<l; i++){
-                    if(settings.columns[i] && settings.columns[i].type=="readonly"){
-                        columns.eq(i).html('<div></div>');
+                var cs = _this.find('thead>tr>th'),s='<tr class="newer">';
+                for(var i=0,t,l=cs.length; i<l; i++){
+                    if(settings.columns[i]){
+                        if(settings.columns[i].type=="readonly" && !settings.columns[i].creatable){
+                            s+='<td><div></div></td>';
+                        }else{
+                            var w = $(cs[i]).innerWidth()-2;
+                            s+='<td><input type="text" style="width:'+w+'px;" name="'+settings.columns[i].name+'" /></td>';
+                        }
+                    }else{
+                        s+='<td></td>';
                     }
                 }
 
-                _this.find("tbody>tr:last").addClass("newer");
-                // FIXME: do better.
-                _this.find("tbody>tr:last>td:last>a.edit").click();
-                _this.find("tbody>tr:last>td>input").val("");
+                _this.find("tbody").append(s+'</tr>');
+                if(settings.create.oncreate instanceof Function){
+                    settings.create.oncreate.call(this, _this.find('tbody>tr:last>td'));
+                }
             });
         }
         $(settings.edit.bar, this).live("click", function(){
@@ -72,12 +82,12 @@
                     continue;
                 case "number":
                 case "int":
-                    val = parseInt(val);
+                    //val = parseInt(val);
                     type = "number";
                     sz = size(settings.columns[i].max);
                     break;
                 case "float":
-                    val = parseFloat(val);
+                    //val = parseFloat(val);
                     type = "number";
                     sz = size(settings.columns[i].max);
                     break;
@@ -124,7 +134,16 @@
                 }
             });
         });
+        // SAVE.
         $(settings.save.bar, this).live("click",function(){
+            var line = $(this).parent().parent();
+            if(line.hasClass("newer")){
+                create.call(this,line);
+            }else{
+                update.call(this,line);
+            }
+        });
+        function update(){
             var __this=this, dt=[],
                 line = $(this).parent().parent();
                 columns = line.find(">td");
@@ -151,41 +170,20 @@
                     continue;
                 case "number":
                 case "int":
-                    if(!validate(val,"int",min,max)){
-                        ipt.focus();
-                        ipt.css('border-color','#f00');
-                        return;
-                    }else{
-                        ipt.css('border-color','');
-                    }
-                    dt[dt.length] = name+"="+encodeURIComponent(val);
+                    if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
                     break;
                 case "float":
-                    if(!validate(val,"float",min,max)){
-                        ipt.focus();
-                        ipt.css('border-color','#f00');
-                        return;
-                    }else{
-                        ipt.css('border-color','');
-                    }
-                    dt[dt.length] = name+"="+encodeURIComponent(val);
+                    if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
                     break;
                 case "text":
-                    if(!validate(val,"text",min,max)){
-                        ipt.focus();
-                        ipt.css('border-color','#f00');
-                        return;
-                    }else{
-                        ipt.css('border-color','');
-                    }
-                    dt[dt.length] = name+"="+encodeURIComponent(val);
+                    if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
                     break;
                 default:
                     continue;
                 }
-            }
-            if(line.hasClass("newer")){
-                dt[dt.length] = "isadd=1";
             }
             $.ajax({
                 data : dt.join("&"),
@@ -197,8 +195,6 @@
                         alert(data.msg);
                         return;
                     }
-                    //var line = $(__this).parent().parent();
-                        //columns = line.find(">td");
                     if(settings.save.callback.call(__this, data)){
                         for(var i=0,col,$col,val,l=columns.length; i<l; i++){
                             if(!settings.columns[i] || !settings.columns[i].type){continue;}
@@ -206,17 +202,15 @@
                             val = $col.find("input").val();
                             switch(settings.columns[i].type){
                             case "readonly":
-                                if(line.hasClass("newer")){
-                                    val = data.msg;
-                                    break;
-                                }
                                 continue;
+                            case "pkey":
+                                break;
                             case "number":
                             case "int":
-                                val = parseInt(val);
+                                //val = parseInt(val);
                                 break;
                             case "float":
-                                val = parseFloat(val);
+                                //val = parseFloat(val);
                                 break;
                             case "text":
                                 val = val;
@@ -237,7 +231,114 @@
                     }
                 }
             });
-        });
+        }
+        function create(){
+            var __this=this, dt=[],
+                line = $(this).parent().parent();
+                columns = line.find(">td");
+            if(settings.create.data instanceof Function){
+                dt[0] = settings.create.data.call(this,line,columns);
+            }else if(settings.create.data){
+                dt[0] = settings.create.data;
+            }
+            if(settings.create.onsubmit &&
+                settings.create.onsubmit instanceof Function &&
+                !settings.create.onsubmit.call(this,line,columns)){
+                    return;
+            }
+            for(var i=0,col,$col,ipt,name,val,l=columns.length; i<l; i++){
+                if(!settings.columns[i] || !settings.columns[i].type){continue;}
+                col=columns[i], $col=$(col);
+                ipt = $col.find("input");
+                val = ipt.val();
+                name = ipt.attr("name");
+                var min=settings.columns[i].min,
+                    max=settings.columns[i].max;
+                switch(settings.columns[i].type){
+                case "readonly":
+                    if(settings.columns[i].creatable){
+                        if(!new RegExp(settings.columns[i].pattern).test(val)){
+                            ipt.focus();
+                            ipt.css('border-color','#f00');
+                            alert(settings.columns[i].msg)
+                            return;
+                        }else{
+                            ipt.css('border-color','');
+                        }
+                        dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                        break;
+                    }
+                    continue;
+                case "number":
+                case "int":
+                    if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                case "float":
+                    if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                case "text":
+                    if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                default:
+                    continue;
+                }
+            }
+            dt[dt.length] = "isadd=1";
+            $.ajax({
+                data : dt.join("&"),
+                type: settings.create.method,
+                dataType : settings.create.dataType,
+                url : settings.create.action,
+                success : function(data,state){
+                    if(data.status!="ok"){
+                        alert(data.msg);
+                        return;
+                    }
+                    //var line = $(__this).parent().parent();
+                        //columns = line.find(">td");
+                    if(settings.create.callback.call(__this, data)){
+                        for(var i=0,col,$col,val,l=columns.length; i<l; i++){
+                            if(!settings.columns[i] || !settings.columns[i].type){continue;}
+                            col=columns[i], $col=$(col);
+                            val = $col.find("input").val();
+                            switch(settings.columns[i].type){
+                            case "readonly":
+                                if(settings.columns[i].creatable){
+                                    break;
+                                }else{
+                                    //val = data.msg;
+                                    continue;
+                                }
+                            case "pkey":
+                                break;
+                            case "number":
+                            case "int":
+                                //val = parseInt(val);
+                                break;
+                            case "float":
+                                //val = parseFloat(val);
+                                break;
+                            case "text":
+                                val = val;
+                                break;
+                            default:
+                                continue;
+                            }
+                            columns[i].innerHTML = '<div>'+val+'</div>';
+                        }
+                        var p=$(_this), idx=line[0].rowIndex-1;
+                        $(settings.save.bar, p).eq(idx).hide();
+                        $(settings.cancel.bar, p).eq(idx).hide();
+                        $(settings.edit.bar, p).eq(idx).show();
+                        $(settings.remove.bar, p).eq(idx).show();
+                    }
+                    line.removeClass("newer");
+                }
+            });
+        }
         $(settings.cancel.bar, this).live("click", function(){
             var line = $(this).parent().parent();
                 columns = line.find(">td");
@@ -254,10 +355,12 @@
                     continue;
                 case "number":
                 case "int":
-                    val = parseInt(ipt[0].defaultValue);
+                    //val = parseInt(ipt[0].defaultValue);
+                    val = ipt[0].defaultValue;
                     break;
                 case "float":
-                    val = parseFloat(ipt[0].defaultValue);
+                    //val = parseFloat(ipt[0].defaultValue);
+                    val = ipt[0].defaultValue;
                     break;
                 case "text":
                     val = ipt[0].defaultValue;
@@ -283,31 +386,55 @@
                 return String(val).length;
             }
         }
-        function validate(val,type,min,max){
-            switch(type){
+        function validate(elem,opt){
+            var val=elem.val(), len=String(val).length, r=true, msg;
+            if(len==0 && opt.empty){return true;}
+
+            switch(opt.type){
             case 'int':
             case 'number':
-                if(!/^[0-9]+$/.test(val) || val==Number.NaN || val<min || val>max){
-                    alert("请输入["+min+","+max+"]之间的整数。");
-                    return false;
+                if(!/^[0-9]+$/.test(val)){
+                    msg = "请输入整数。";
+                    r = false;
                 }
-                return true;
+                break;
             case 'float':
-                if(!/^[0-9]+(?:\.[0-9]+)?$/.test(val) || val==Number.NaN || val<min || val>max){
-                    alert("请输入["+min+","+max+"]之间的数值。");
-                    return false;
+                if(!/^[0-9]+(?:\.[0-9]+)?$/.test(val)){
+                    msg = "请输入数值。"
+                    r =  false;
                 }
-                return true;
+                break;
             case 'text':
-                var len=String(val).length;
-                if(len<min || len>max){
-                    alert("请输入长度在["+min+","+max+"]之间的字符串。");
-                    return false;
-                }
-                return true;
+                break;
             default:
+                msg = "不支持的字段类型。"
+                r = false;
+                break;
+            }
+            if(!r){
+                elem.focus();
+                elem.css('border-color','#f00');
+                alert(msg);
                 return false;
             }
+            if(opt.min && opt.min>len){
+                msg = "请输入大于 "+opt.min+"的整数。"
+                r = false;
+            }else if(opt.max && opt.max<len){
+                msg = "请输入小于 "+opt.max+"的整数。"
+                r = false;
+            }else if(opt.pattern && !new RegExp(opt.pattern).test(val)){
+                msg = opt.msg||"请输入符合特定规则/"+opt.pattern+"/的值。";
+                r = false;
+            }
+            if(!r){
+                elem.focus();
+                elem.css('border-color','#f00');
+                alert(msg);
+            }else{
+                elem.css('border-color','');
+            }
+            return r;
         }
     };
 })(jQuery);
