@@ -145,7 +145,6 @@
         });
         function update(line){
             if($(this).data("running")){return;}
-            $(this).data("running", true).css({"color":"#ccc","cursor":"default"});
             var __this=this, dt=[],
                 line = $(this).parent().parent();
                 columns = line.find(">td");
@@ -187,6 +186,7 @@
                     continue;
                 }
             }
+            $(this).data("running", true).css({"color":"#ccc","cursor":"default"});
             $.ajax({
                 data : dt.join("&"),
                 type: settings.save.method,
@@ -237,6 +237,7 @@
             });
         }
         function create(){
+            if($(this).data("running")){return;}
             var __this=this, dt=[],
                 line = $(this).parent().parent();
                 columns = line.find(">td");
@@ -291,6 +292,7 @@
                 }
             }
             dt[dt.length] = "isadd=1";
+            $(this).data("running", true).css({"color":"#ccc","cursor":"default"});
             $.ajax({
                 data : dt.join("&"),
                 type: settings.create.method,
@@ -340,6 +342,8 @@
                         $(settings.remove.bar, p).eq(idx).show();
                     }
                     line.removeClass("newer");
+
+                    $(__this).data("running", false).css({"color":"","cursor":""});
                 }
             });
         }
@@ -391,54 +395,94 @@
             }
         }
         function validate(elem,opt){
-            var val=elem.val(), len=String(val).length, r=true, msg;
+            var val=elem.val(), len=String(val).length, rt=true, msg=[];
             if(len==0 && opt.empty){return true;}
 
             switch(opt.type){
             case 'int':
             case 'number':
-                if(!/^[0-9]+$/.test(val)){
-                    msg = "请输入整数。";
-                    r = false;
+                if(!/^[0-9]*$/.test(val)){
+                    msg[msg.length] = "整数";
+                    rt = false;
                 }
+                if(opt.min && opt.min>val){
+                    msg[msg.length] = "值大于或等于 "+opt.min;
+                    rt = false;
+                }
+                if(opt.max && opt.max<val){
+                    msg[msg.length] = "值小于或等于 "+opt.max;
+                    rt = false;
+                }
+                if(opt.minlen && opt.minlen>len){
+                    msg[msg.length] = "长度大于或等于 "+opt.minlen+" 位";
+                    rt = false;
+                }
+                if(opt.maxlen && opt.maxlen<len){
+                    msg[msg.length] = "长度小于或等于 "+opt.maxlen+" 位";
+                    rt = false;
+                }
+                if(opt.pattern && !new RegExp(opt.pattern).test(val)){
+                    msg[msg.length] = opt.msg||"符合特定规则/"+opt.pattern+"/";
+                    rt = false;
+                }
+                msg = "请输入："+msg.join("，");
                 break;
             case 'float':
-                if(!/^[0-9]+(?:\.[0-9]+)?$/.test(val)){
-                    msg = "请输入数值。"
-                    r =  false;
+                if(!/^[0-9]*(?:\.[0-9]+)?$/.test(val)){
+                    msg[msg.length] = "浮点数";
+                    rt =  false;
                 }
+                if(opt.min && opt.min>val){
+                    msg[msg.length] = "值大于或等于 "+opt.min;
+                    rt = false;
+                }
+                if(opt.max && opt.max<val){
+                    msg[msg.length] = "值小于或等于 "+opt.max;
+                    rt = false;
+                }
+                if(opt.minlen && opt.minlen>len){
+                    msg[msg.length] = "长度大于或等于 "+opt.minlen+" 位";
+                    rt = false;
+                }
+                if(opt.maxlen && opt.maxlen<len){
+                    msg[msg.length] = "长度小于或等于 "+opt.maxlen+" 位";
+                    rt = false;
+                }
+                if(opt.pattern && !new RegExp(opt.pattern).test(val)){
+                    msg[msg.length] = opt.msg||"符合特定规则/"+opt.pattern+"/";
+                    rt = false;
+                }
+                msg = "请输入："+msg.join("，");
                 break;
             case 'text':
+                msg[msg.length] = "字符串";
+                if(opt.minlen && opt.minlen>len){
+                    msg[msg.length] = "长度大于或等于 "+opt.minlen+" 位";
+                    rt = false;
+                }
+                if(opt.maxlen && opt.maxlen<len){
+                    msg[msg.length] = "长度小于或等于 "+opt.maxlen+" 位";
+                    rt = false;
+                }
+                if(opt.pattern && !new RegExp(opt.pattern).test(val)){
+                    msg[msg.length] = opt.msg||"符合特定规则/"+opt.pattern+"/";
+                    rt = false;
+                }
+                msg = "请输入："+msg.join("，");
                 break;
             default:
-                msg = "不支持的字段类型。"
-                r = false;
+                msg = "【警告】不支持 "+opt.type+" 字段类型。";
+                rt = false;
                 break;
             }
-            if(!r){
-                elem.focus();
-                elem.css('border-color','#f00');
-                alert(msg);
-                return false;
-            }
-            if(opt.min && opt.min>len){
-                msg = "请输入大于 "+opt.min+"的整数。"
-                r = false;
-            }else if(opt.max && opt.max<len){
-                msg = "请输入小于 "+opt.max+"的整数。"
-                r = false;
-            }else if(opt.pattern && !new RegExp(opt.pattern).test(val)){
-                msg = opt.msg||"请输入符合特定规则/"+opt.pattern+"/的值。";
-                r = false;
-            }
-            if(!r){
+            if(!rt){
                 elem.focus();
                 elem.css('border-color','#f00');
                 alert(msg);
             }else{
                 elem.css('border-color','');
             }
-            return r;
+            return rt;
         }
     };
 })(jQuery);

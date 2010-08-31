@@ -81,9 +81,9 @@ $(function(){
     $("#editableTable").editable({
         columns : [
             {type:"readonly", name:"id"},
-            {type:"readonly", creatable:true, name:"pk", pattern:'[0-9]{16,22}', msg:"请输入16到22位长度的数字。"},
-            {type:"text", name:"username", min:1, max:32, pattern:'', empty:true},
-            {type:"number", name:"age", min:1, max:10},
+            {type:"readonly", creatable:true, name:"pk", pattern:'^[0-9]{16,22}$', msg:"请输入16到22位长度的数字。"},
+            {type:"text", name:"username", min:1, max:32, pattern:'^[a-zA-Z0-9]+$', empty:true},
+            {type:"number", name:"age", min:1, max:120, minlen:2, maxlen:10},
             {type:"float", name:"height", min:0, max:300}
             ],
         create: {
