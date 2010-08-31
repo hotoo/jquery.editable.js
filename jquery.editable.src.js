@@ -143,7 +143,9 @@
                 update.call(this,line);
             }
         });
-        function update(){
+        function update(line){
+            if($(this).data("running")){return;}
+            $(this).data("running", true).css({"color":"#ccc","cursor":"default"});
             var __this=this, dt=[],
                 line = $(this).parent().parent();
                 columns = line.find(">td");
@@ -229,6 +231,8 @@
                     if(line.hasClass("newer")){
                         line.removeClass("newer");
                     }
+
+                    $(__this).data("running", false).css({"color":"","cursor":""});
                 }
             });
         }
