@@ -48,6 +48,39 @@
         };
         var settings = $.extend(settings, defaults, options);
         var _this = this;
+        function mkInput(val,context,opt){
+            switch(opt.type){
+            case "readonly":
+                if(opt.creatable){
+                    type="text";
+                    sz = opt.maxlen;
+                    break;
+                }else{
+                    return "";
+                }
+            case "number":
+            case "int":
+                //val = parseInt(val);
+                type = "number";
+                sz = opt.maxlen;
+                break;
+            case "float":
+                //val = parseFloat(val);
+                type = "number";
+                sz = opt.maxlen;
+                break;
+            case "text":
+                //val = val;
+                type = "text";
+                sz = opt.maxlen;
+                break;
+            default:
+                return "";
+            }
+            return '<input type="'+type+'" name="'+opt.name+'" style="width:'+
+                (context.innerWidth()-2)+'px;"'+
+                (sz?' maxlength="'+sz+'"':'')+' value="'+val+'" />';
+        }
         if(settings.create.bar){
             $(settings.create.bar).click(function(){
                 var cs = _this.find('thead>tr>th'),s='<tr class="newer">';
@@ -56,8 +89,7 @@
                         if(settings.columns[i].type=="readonly" && !settings.columns[i].creatable){
                             s+='<td><div></div></td>';
                         }else{
-                            var w = $(cs[i]).innerWidth()-2;
-                            s+='<td><input type="text" style="width:'+w+'px;" name="'+settings.columns[i].name+'" /></td>';
+                            s+='<td>'+mkInput("",$(cs[i]),settings.columns[i])+'</td>'
                         }
                     }else{
                         s+='<td></td>';
@@ -73,34 +105,23 @@
         $(settings.edit.bar, this).live("click", function(){
             var line = $(this).parent().parent(),
                 columns = line.find(">td");
-            for(var i=0,col,$col,val,type,name,sz,l=columns.length; i<l; i++){
+            for(var i=0,$col,l=columns.length; i<l; i++){
                 if(!settings.columns[i] || !settings.columns[i].type){continue;}
-                col=columns[i], $col=$(col);
-                val = $col.text();
                 switch(settings.columns[i].type){
                 case "readonly":
                     continue;
                 case "number":
                 case "int":
-                    //val = parseInt(val);
-                    type = "number";
-                    sz = size(settings.columns[i].maxlen);
-                    break;
                 case "float":
-                    //val = parseFloat(val);
-                    type = "number";
-                    sz = size(settings.columns[i].maxlen);
-                    break;
                 case "text":
-                    val = val;
-                    type = "text";
-                    sz = settings.columns[i].max;
+                    $col=$(columns[i]);
+                    //$(mkInput($col.text(),settings.columns[i])).css({"width":$col.innerWidth()-2}).appendTo($col);
+                    //$(mkInput($col.text(),settings.columns[i])).css({"width":$col.innerWidth()-2}).appendTo($col);
+                    $col.html(mkInput($col.text(),$col,settings.columns[i]));
                     break;
                 default:
                     continue;
                 }
-                name = settings.columns[i].name;
-                columns[i].innerHTML = '<input type="'+type+'" name="'+name+'" style="width:'+($col.innerWidth()-2)+'px;" size="'+sz+'" value="'+val+'" />';
             }
             var p=$(_this), idx=line[0].rowIndex-1;
             $(settings.edit.bar, p).eq(idx).hide();
@@ -168,7 +189,8 @@
                     max=settings.columns[i].max;
                 switch(settings.columns[i].type){
                 case "readonly":
-                    continue;
+                    dt[dt.length] = settings.columns[i].name+"="+encodeURIComponent(encodeURIComponent($col.text()));
+                    break;
                 case "number":
                 case "int":
                     if(!validate(ipt,settings.columns[i])){return;}
@@ -271,9 +293,10 @@
                             ipt.css('border-color','');
                         }
                         dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
-                        break;
+                    }else{
+                        dt[dt.length] = settings.columns[i].name+"="+encodeURIComponent(encodeURIComponent($col.text()));
                     }
-                    continue;
+                    break;
                 case "number":
                 case "int":
                     if(!validate(ipt,settings.columns[i])){return;}
@@ -385,15 +408,6 @@
             $(settings.remove.bar, p).eq(idx).show();
         });
 
-        function size(val){
-            return String(val).length;
-
-            if(typeof val =="string" || val instanceof String){
-                return val.length;
-            }else if(typeof(val)=="number" || val instanceof Number){
-                return String(val).length;
-            }
-        }
         function validate(elem,opt){
             var val=elem.val(), len=String(val).length, rt=true, msg=[];
             if(len==0 && opt.empty){return true;}
