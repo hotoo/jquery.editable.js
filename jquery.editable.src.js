@@ -84,12 +84,12 @@
                 case "int":
                     //val = parseInt(val);
                     type = "number";
-                    sz = size(settings.columns[i].max);
+                    sz = size(settings.columns[i].maxlen);
                     break;
                 case "float":
                     //val = parseFloat(val);
                     type = "number";
-                    sz = size(settings.columns[i].max);
+                    sz = size(settings.columns[i].maxlen);
                     break;
                 case "text":
                     val = val;
