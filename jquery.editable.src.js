@@ -217,6 +217,7 @@
                 success : function(data,state){
                     if(data.status!="ok"){
                         alert(data.msg);
+                        $(__this).data("running", false).css({"color":"","cursor":""});
                         return;
                     }
                     if(settings.save.callback.call(__this, data)){
@@ -324,6 +325,7 @@
                 success : function(data,state){
                     if(data.status!="ok"){
                         alert(data.msg);
+                        $(__this).data("running", false).css({"color":"","cursor":""});
                         return;
                     }
                     //var line = $(__this).parent().parent();
