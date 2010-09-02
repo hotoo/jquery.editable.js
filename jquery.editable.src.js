@@ -138,9 +138,9 @@
                 !settings.remove.onsubmit.call(this,line,cols)){
                     return;
             }
-            var d=settings.remove.data instanceof Function?settings.remove.data.call(this,line,cols):(settings.remove.data||"");
+            //var d=settings.remove.data instanceof Function?settings.remove.data.call(this,line,cols):(settings.remove.data||"");
             $.ajax({
-                data : d,
+                data : mkParam.call(this,line,settings.remove.data),
                 type: settings.remove.method,
                 dataType : settings.remove.dataType,
                 url : settings.remove.action,
@@ -155,6 +155,48 @@
                 }
             });
         });
+        function mkParam(line,extra_data){
+            if($(this).data("running")){return;}
+            var __this=this, dt=[],
+                line = $(this).parent().parent();
+                columns = line.find(">td");
+            if(extra_data instanceof Function){
+                dt[0] = extra_data.call(this,line,columns);
+            }else if(extra_data){
+                dt[0] = extra_data;
+            }
+            for(var i=0,col,$col,ipt,name,val,l=columns.length; i<l; i++){
+                if(!settings.columns[i] || !settings.columns[i].type){continue;}
+                col=columns[i], $col=$(col);
+                ipt = $col.find("input");
+                val = ipt.length?ipt.val():$col.text();
+                //name = ipt.attr("name");
+                name = settings.columns[i].name;
+                var min=settings.columns[i].min,
+                    max=settings.columns[i].max;
+                switch(settings.columns[i].type){
+                case "readonly":
+                    dt[dt.length] = settings.columns[i].name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                case "number":
+                case "int":
+                    //if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                case "float":
+                    //if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                case "text":
+                    //if(!validate(ipt,settings.columns[i])){return;}
+                    dt[dt.length] = name+"="+encodeURIComponent(encodeURIComponent(val));
+                    break;
+                default:
+                    continue;
+                }
+            }
+            return dt.join("&")
+        }
         // SAVE.
         $(settings.save.bar, this).live("click",function(){
             var line = $(this).parent().parent();
@@ -417,7 +459,7 @@
             switch(opt.type){
             case 'int':
             case 'number':
-                if(!/^[0-9]*$/.test(val)){
+                if(!/^-?[0-9]*$/.test(val)){
                     msg[msg.length] = "整数";
                     rt = false;
                 }
@@ -444,7 +486,7 @@
                 msg = "请输入："+msg.join("，");
                 break;
             case 'float':
-                if(!/^[0-9]*(?:\.[0-9]+)?$/.test(val)){
+                if(!/^-?[0-9]*(?:\.[0-9]+)?$/.test(val)){
                     msg[msg.length] = "浮点数";
                     rt =  false;
                 }
