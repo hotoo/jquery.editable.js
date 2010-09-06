@@ -67,7 +67,7 @@
             case "float":
                 //val = parseFloat(val);
                 type = "number";
-                sz = opt.maxlen;
+                sz = opt.maxlen+1; // fix for point.
                 break;
             case "text":
                 //val = val;
