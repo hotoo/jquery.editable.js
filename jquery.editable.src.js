@@ -1,4 +1,6 @@
 /**
+ * 数据库表数据修改的支持。
+ *
  * @author 闲耘™ (hotoo.cn[AT]gmail.com)
  * @version 1.0, 2010/08/03
  */
@@ -47,6 +49,26 @@
             }
         };
         var settings = $.extend(settings, defaults, options);
+        for(var i=0,l=settings.columns.length; i<l; i++){
+            if(settings.columns[i] && settings.columns[i].type){
+                switch(settings.columns[i].type){
+                case "int":
+                case "number":
+                    settings.columns[i].maxlen+=2;
+                    if(settings.columns[i].min>=0){
+                        settings.columns[i].maxlen-=1;
+                    }
+                    break;
+                case "float":
+                    settings.columns[i].maxlen+=2;
+                    if(settings.columns[i].min>=0){
+                        settings.columns[i].maxlen-=1;
+                    }
+                    break;
+                }
+            }
+        }
+
         var _this = this;
         function mkInput(val,context,opt){
             switch(opt.type){
@@ -67,7 +89,7 @@
             case "float":
                 //val = parseFloat(val);
                 type = "number";
-                sz = opt.maxlen+1; // fix for point.
+                sz = opt.maxlen+1; // fix length for float point.
                 break;
             case "text":
                 //val = val;
@@ -209,7 +231,7 @@
         function update(line){
             if($(this).data("running")){return;}
             var __this=this, dt=[],
-                line = $(this).parent().parent();
+                line = $(this).parent().parent(),
                 columns = line.find(">td");
             if(settings.save.data instanceof Function){
                 dt[0] = settings.save.data.call(this,line,columns);
@@ -304,7 +326,7 @@
         function create(){
             if($(this).data("running")){return;}
             var __this=this, dt=[],
-                line = $(this).parent().parent();
+                line = $(this).parent().parent(),
                 columns = line.find(">td");
             if(settings.create.data instanceof Function){
                 dt[0] = settings.create.data.call(this,line,columns);
